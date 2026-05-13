@@ -1,1 +1,686 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>ADAPTRSMU | Авторизация + 7 инстанций</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
+        body {
+            background: linear-gradient(145deg, #0a2f5a 0%, #041e36 100%);
+            font-family: 'Segoe UI', 'Poppins', 'Roboto', sans-serif;
+            min-height: 100vh;
+            color: #fff;
+            padding: 1.5rem;
+        }
+
+        /* Стили для авторизации */
+        .auth-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            transition: all 0.3s;
+        }
+
+        .auth-card {
+            background: linear-gradient(135deg, #0e3a5f, #06233f);
+            padding: 2rem 2rem 2rem 2rem;
+            border-radius: 2.5rem;
+            width: 380px;
+            text-align: center;
+            box-shadow: 0 30px 40px rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.2);
+            animation: fadeScale 0.3s ease;
+        }
+
+        @keyframes fadeScale {
+            from { opacity: 0; transform: scale(0.95);}
+            to { opacity: 1; transform: scale(1);}
+        }
+
+        .auth-card h2 {
+            font-size: 2rem;
+            background: linear-gradient(120deg, #fff, #7ab3ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .auth-card input {
+            width: 100%;
+            padding: 14px;
+            margin: 12px 0;
+            border-radius: 60px;
+            border: none;
+            background: #ecf0f1;
+            font-size: 1rem;
+            text-align: center;
+            font-weight: 500;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .auth-card button {
+            background: #2c6e9e;
+            width: 100%;
+            padding: 12px;
+            border-radius: 60px;
+            border: none;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: white;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: 0.2s;
+        }
+
+        .auth-card button:hover {
+            background: #1f8ad0;
+            transform: scale(1.02);
+        }
+
+        .error-msg {
+            color: #ffaa66;
+            margin-top: 12px;
+            font-size: 0.85rem;
+        }
+
+        /* Основной интерфейс (скрыт до авторизации) */
+        .main-app {
+            display: none;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #FFFFFF, #aac9ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 2px;
+        }
+
+        .sub {
+            text-align: center;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+
+        .user-info {
+            background: rgba(0,0,0,0.3);
+            border-radius: 60px;
+            padding: 0.5rem 1.2rem;
+            display: inline-block;
+            margin-bottom: 1.2rem;
+            font-weight: bold;
+        }
+
+        .instances-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.8rem;
+            margin: 2rem 0;
+        }
+
+        .instance-card {
+            background: rgba(15, 45, 70, 0.7);
+            backdrop-filter: blur(5px);
+            border-radius: 1.8rem;
+            padding: 1.2rem;
+            text-align: center;
+            transition: 0.2s;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .instance-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1.2rem;
+            background: linear-gradient(120deg, #ffefb0, #9bc5ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        /* Одна сфера на инстанцию */
+        .single-sphere {
+            display: flex;
+            justify-content: center;
+            margin: 1rem 0;
+        }
+
+        .sphere {
+            background: radial-gradient(circle at 30% 30%, #2c6e9e, #0e3a5a);
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 12px 20px rgba(0,0,0,0.4);
+            transition: all 0.2s ease;
+            border: 2px solid rgba(255,255,240,0.5);
+            font-weight: bold;
+            font-size: 2rem;
+        }
+
+        .sphere.completed {
+            background: radial-gradient(circle at 30% 30%, #2ecc71, #1e8e4a);
+            box-shadow: 0 0 20px #2ecc71aa;
+            cursor: default;
+            border-color: #c6ffb0;
+        }
+
+        .sphere span {
+            font-size: 0.9rem;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 60px;
+            margin-top: 8px;
+            font-size: 0.8rem;
+        }
+
+        /* Модалка ввода кода */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(6px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1500;
+        }
+
+        .modal-content {
+            background: linear-gradient(145deg, #143e60, #082a44);
+            border-radius: 2rem;
+            padding: 2rem;
+            width: 320px;
+            text-align: center;
+            box-shadow: 0 20px 35px black;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 60px;
+            border: none;
+            text-align: center;
+            font-size: 1rem;
+            margin: 15px 0;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .modal-buttons button {
+            background: #2c6e9e;
+            padding: 8px 20px;
+            border-radius: 40px;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+
+        .btn-submit {
+            background: #27ae60 !important;
+        }
+
+        .error-message {
+            color: #ffb347;
+            font-size: 0.8rem;
+            margin-top: 10px;
+        }
+
+        /* награды */
+        .reward-section {
+            text-align: center;
+            margin-top: 2rem;
+            background: rgba(0,0,0,0.3);
+            border-radius: 2rem;
+            padding: 1rem;
+            transition: all 0.3s;
+        }
+
+        .certificate-card {
+            background: linear-gradient(125deg, #ffe6a3, #ffcf6e);
+            color: #1f3b4c;
+            padding: 1.2rem;
+            border-radius: 2rem;
+            display: inline-block;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        .merch-code {
+            background: #1e2f3c;
+            color: #f7d44a;
+            font-family: monospace;
+            font-size: 1.4rem;
+            padding: 6px 18px;
+            border-radius: 60px;
+            display: inline-block;
+            margin: 10px 0;
+            letter-spacing: 1px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        footer {
+            text-align: center;
+            font-size: 0.75rem;
+            margin-top: 2rem;
+            opacity: 0.6;
+        }
+
+        .logout-btn {
+            background: rgba(255,80,80,0.8);
+            border: none;
+            padding: 6px 18px;
+            border-radius: 60px;
+            color: white;
+            margin-left: 12px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Модалка авторизации -->
+<div id="authModal" class="auth-container">
+    <div class="auth-card">
+        <h2>🔐 ADAPTRSMU</h2>
+        <p style="margin-bottom: 10px;">Войдите по ФИО и паролю</p>
+        <input type="text" id="loginFullName" placeholder="ФИО (например: Иванов Иван Иванович)" autocomplete="off">
+        <input type="password" id="loginPassword" placeholder="Пароль">
+        <button id="authBtn">Войти</button>
+        <div id="authError" class="error-msg"></div>
+        <div style="margin-top: 12px; font-size: 12px; opacity:0.7;">⭐ 100 случайных участников ⭐</div>
+    </div>
+</div>
+
+<!-- Основное приложение (после входа) -->
+<div class="main-app" id="mainApp">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+        <h1>✨ ADAPTRSMU ✨</h1>
+        <div>
+            <span class="user-info" id="userNameDisplay"></span>
+            <button id="logoutButton" class="logout-btn">🚪 Выйти</button>
+        </div>
+    </div>
+    <div class="sub">7 инстанций · По 1 сфере = 7 испытаний · Введи уникальный код для каждой сферы</div>
+
+    <div class="instances-grid" id="instancesContainer"></div>
+
+    <div id="rewardArea" class="reward-section hidden">
+        <div class="certificate-card">
+            <h3>🏅 СЕРТИФИКАТ ПРОХОЖДЕНИЯ 🏅</h3>
+            <p>Вы завершили все 7 инстанций ADAPTRSMU!<br>Ваш вклад в движение отмечен.</p>
+            <div>🎁 Код на получение эксклюзивного мерча:</div>
+            <div class="merch-code" id="merchCodeDisplay">ADAPT-MERCH-777</div>
+            <small>Предъявите координатору</small>
+        </div>
+    </div>
+    <footer>Каждая сфера требует свой код. Сфера становится зелёной после верного ввода. Удачи!</footer>
+</div>
+
+<!-- Модалка для ввода кода сферы -->
+<div id="codeModal" class="modal">
+    <div class="modal-content">
+        <h3 id="modalInstanceTitle">Инстанция</h3>
+        <p>Введите код доступа для этой сферы</p>
+        <input type="text" id="sphereCodeInput" placeholder="Код..." autocomplete="off">
+        <div class="modal-buttons">
+            <button id="modalCancelBtn">Отмена</button>
+            <button id="modalSubmitBtn" class="btn-submit">Активировать</button>
+        </div>
+        <div id="modalErrorMsg" class="error-message"></div>
+    </div>
+</div>
+
+<script>
+    // ---------- ГЕНЕРАЦИЯ 100 РУССКИХ ФИО и 100 ПАРОЛЕЙ ----------
+    const russianSurnames = ["Иванов","Петров","Сидоров","Смирнов","Кузнецов","Попов","Васильев","Соколов","Михайлов","Новиков","Фёдоров","Морозов","Волков","Алексеев","Лебедев","Семёнов","Егоров","Павлов","Козлов","Степанов","Николаев","Дмитриев","Андреев","Макаров","Борисов","Тимофеев","Крылов","Григорьев","Антонов","Архипов","Никитин","Максимов","Комаров","Орлов","Соловьёв","Куликов","Карпов","Фролов","Виноградов","Белов","Наумов","Голубев","Тихонов","Денисов","Ермаков","Зайцев","Кудрявцев","Поляков","Филиппов","Романов"];
+    const russianNames = ["Александр","Дмитрий","Максим","Сергей","Андрей","Алексей","Иван","Евгений","Михаил","Владимир","Николай","Павел","Артём","Роман","Илья","Олег","Василий","Виктор","Георгий","Тимофей","Артур","Даниил","Кирилл","Никита","Матвей","Егор","Фёдор","Ярослав","Глеб","Леонид"];
+    const russianPatronymics = ["Александрович","Дмитриевич","Максимович","Сергеевич","Андреевич","Алексеевич","Иванович","Евгеньевич","Михайлович","Владимирович","Николаевич","Павлович","Романович","Олегович","Васильевич","Викторович","Георгиевич","Тимофеевич","Артурович","Данилович","Кириллович"];
+
+    function getRandomItem(arr) {
+        return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function generateRussianFIO() {
+        const surname = getRandomItem(russianSurnames);
+        const name = getRandomItem(russianNames);
+        const patronymic = getRandomItem(russianPatronymics);
+        return `${surname} ${name} ${patronymic}`;
+    }
+
+    function generateRandomPassword() {
+        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789!@#$%";
+        let pass = "";
+        for (let i = 0; i < 8; i++) {
+            pass += chars[Math.floor(Math.random() * chars.length)];
+        }
+        return pass;
+    }
+
+    // Создаём базу 100 уникальных пользователей (ФИО -> пароль)
+    const usersDB = new Map(); // key: ФИО (строка), value: пароль
+    const usedLogins = new Set();
+    while (usersDB.size < 100) {
+        const fio = generateRussianFIO();
+        if (!usedLogins.has(fio)) {
+            usedLogins.add(fio);
+            const pass = generateRandomPassword();
+            usersDB.set(fio, pass);
+        }
+    }
+
+    // Для отладки (выведем в консоль несколько примеров)
+    console.log("Сгенерировано 100 пользователей. Примеры:");
+    let sampleCount = 0;
+    for (let [login, pass] of usersDB.entries()) {
+        if (sampleCount++ < 5) console.log(`${login} | пароль: ${pass}`);
+    }
+
+    // ---------- 7 ИНСТАНЦИЙ: каждая имеет 1 сферу ----------
+    const INSTANCES = [
+        { name: "Донорское движение", sphereCode: "DONOR2025" },
+        { name: "Тьюторское движение", sphereCode: "TUTOR777" },
+        { name: "Тренинговый центр", sphereCode: "TRAINING99" },
+        { name: "СНК", sphereCode: "SNK123" },
+        { name: "Спортивные секции", sphereCode: "SPORT77" },
+        { name: "Волонтерский центр", sphereCode: "VOLONTER" },
+        { name: "Медиа-штаб", sphereCode: "MEDIA2025" }
+    ];
+
+    // Состояние прохождения для текущего пользователя (храним в localStorage, но сессия пока простая - глобальный объект)
+    let currentUser = null;              // логин (ФИО)
+    let userProgress = {};               // { "Донорское движение": false, ... }
+
+    function initUserProgress() {
+        let progress = {};
+        INSTANCES.forEach(inst => {
+            progress[inst.name] = false;
+        });
+        return progress;
+    }
+
+    // сохраняем прогресс в localStorage относительно пользователя
+    function saveProgressToLocal() {
+        if (!currentUser) return;
+        const storageKey = `adaptrsmu_progress_${currentUser}`;
+        localStorage.setItem(storageKey, JSON.stringify(userProgress));
+    }
+
+    function loadProgressFromLocal() {
+        if (!currentUser) return;
+        const storageKey = `adaptrsmu_progress_${currentUser}`;
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                // проверим что все поля есть
+                INSTANCES.forEach(inst => {
+                    if (parsed[inst.name] === undefined) parsed[inst.name] = false;
+                });
+                userProgress = parsed;
+            } catch(e) { userProgress = initUserProgress(); }
+        } else {
+            userProgress = initUserProgress();
+        }
+        // синхронизируем отображение
+    }
+
+    // Функция проверки полного прохождения всех сфер
+    function isAllCompleted() {
+        for (let inst of INSTANCES) {
+            if (!userProgress[inst.name]) return false;
+        }
+        return true;
+    }
+
+    // Обновить интерфейс наград
+    function updateRewardUI() {
+        const rewardDiv = document.getElementById('rewardArea');
+        if (isAllCompleted()) {
+            rewardDiv.classList.remove('hidden');
+            const merchSpan = document.getElementById('merchCodeDisplay');
+            // Генерируем уникальный код мерча на основе пользователя
+            if (currentUser) {
+                const userHash = btoa(currentUser.slice(0, 15)).replace(/[^a-zA-Z0-9]/g, '').substring(0, 6);
+                merchSpan.innerText = `MERCH-${userHash.toUpperCase()}-ADPT`;
+            } else {
+                merchSpan.innerText = "MERCH-ADAPT-777";
+            }
+        } else {
+            rewardDiv.classList.add('hidden');
+        }
+    }
+
+    // Отображение всех инстанций и сфер (с учётом прогресса)
+    function renderInstances() {
+        const container = document.getElementById('instancesContainer');
+        if (!container) return;
+        container.innerHTML = '';
+        INSTANCES.forEach(instance => {
+            const card = document.createElement('div');
+            card.className = 'instance-card';
+            const title = document.createElement('div');
+            title.className = 'instance-title';
+            title.innerText = instance.name;
+            card.appendChild(title);
+            
+            const sphereWrapper = document.createElement('div');
+            sphereWrapper.className = 'single-sphere';
+            const sphereDiv = document.createElement('div');
+            sphereDiv.className = 'sphere';
+            const isCompleted = userProgress[instance.name];
+            if (isCompleted) {
+                sphereDiv.classList.add('completed');
+                sphereDiv.innerHTML = '✓<span>пройдено</span>';
+            } else {
+                sphereDiv.innerHTML = '🔮<span>активировать</span>';
+            }
+            sphereDiv.setAttribute('data-instance', instance.name);
+            sphereDiv.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (userProgress[instance.name]) {
+                    // уже пройдена: легкий фидбек
+                    sphereDiv.style.transform = 'scale(0.98)';
+                    setTimeout(() => sphereDiv.style.transform = '', 150);
+                    return;
+                }
+                openCodeModal(instance.name, instance.sphereCode, sphereDiv);
+            });
+            sphereWrapper.appendChild(sphereDiv);
+            card.appendChild(sphereWrapper);
+            container.appendChild(card);
+        });
+    }
+
+    // Модальное окно ввода кода для конкретной инстанции
+    let currentModalInstanceName = null;
+    let currentModalSphereElement = null;
+    let currentValidCode = null;
+
+    const modal = document.getElementById('codeModal');
+    const codeInput = document.getElementById('sphereCodeInput');
+    const modalInstanceTitle = document.getElementById('modalInstanceTitle');
+    const modalErrorMsg = document.getElementById('modalErrorMsg');
+
+    function openCodeModal(instanceName, correctCode, sphereElement) {
+        if (userProgress[instanceName]) return;
+        currentModalInstanceName = instanceName;
+        currentModalSphereElement = sphereElement;
+        currentValidCode = correctCode;
+        modalInstanceTitle.innerText = instanceName;
+        codeInput.value = '';
+        modalErrorMsg.innerText = '';
+        modal.style.display = 'flex';
+        codeInput.focus();
+    }
+
+    function closeCodeModal() {
+        modal.style.display = 'none';
+        currentModalInstanceName = null;
+        currentModalSphereElement = null;
+        currentValidCode = null;
+    }
+
+    function verifySphereCode() {
+        if (!currentModalInstanceName) return;
+        const entered = codeInput.value.trim();
+        if (entered === currentValidCode) {
+            // Код верен!
+            if (!userProgress[currentModalInstanceName]) {
+                // Отмечаем сферу пройденной
+                userProgress[currentModalInstanceName] = true;
+                // Обновляем внешний вид сферы
+                if (currentModalSphereElement) {
+                    currentModalSphereElement.classList.add('completed');
+                    currentModalSphereElement.innerHTML = '✓<span>пройдено</span>';
+                }
+                // Сохраняем прогресс
+                saveProgressToLocal();
+                // Проверка на полное завершение
+                updateRewardUI();
+                // Дополнительно: если все пройдены, показать блок сертификата с анимацией
+                if (isAllCompleted()) {
+                    const rewardBlock = document.getElementById('rewardArea');
+                    if (rewardBlock) rewardBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                closeCodeModal();
+            } else {
+                modalErrorMsg.innerText = 'Эта сфера уже активирована ранее!';
+                setTimeout(() => closeCodeModal(), 800);
+            }
+        } else {
+            modalErrorMsg.innerText = `Неверный код! Для ${currentModalInstanceName} код отличается. Подсказка: попробуйте тематический (например, DONOR2025, TUTOR777)`;
+            codeInput.value = '';
+            codeInput.style.border = '1px solid #ffaa66';
+            setTimeout(() => codeInput.style.border = '', 400);
+        }
+    }
+
+    // ---------- СИСТЕМА АВТОРИЗАЦИИ ----------
+    function authUser(login, password) {
+        const trimmedLogin = login.trim();
+        if (!usersDB.has(trimmedLogin)) {
+            return { success: false, message: "ФИО не найдено в базе участников." };
+        }
+        const realPass = usersDB.get(trimmedLogin);
+        if (realPass !== password) {
+            return { success: false, message: "Неверный пароль." };
+        }
+        return { success: true, message: "Успешно!" };
+    }
+
+    function onLoginSuccess(fio) {
+        currentUser = fio;
+        // загружаем прогресс этого пользователя
+        loadProgressFromLocal();
+        // обновляем интерфейс
+        document.getElementById('userNameDisplay').innerHTML = `👤 ${currentUser}`;
+        renderInstances();
+        updateRewardUI();
+        // скрыть модалку авторизации, показать основное приложение
+        document.getElementById('authModal').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+    }
+
+    function logout() {
+        currentUser = null;
+        userProgress = {};
+        document.getElementById('mainApp').style.display = 'none';
+        document.getElementById('authModal').style.display = 'flex';
+        document.getElementById('loginFullName').value = '';
+        document.getElementById('loginPassword').value = '';
+        document.getElementById('authError').innerText = '';
+        // очистить модалку если открыта
+        closeCodeModal();
+    }
+
+    // Обработчики авторизации
+    document.getElementById('authBtn').addEventListener('click', () => {
+        const fio = document.getElementById('loginFullName').value;
+        const pass = document.getElementById('loginPassword').value;
+        const result = authUser(fio, pass);
+        if (result.success) {
+            onLoginSuccess(fio);
+        } else {
+            document.getElementById('authError').innerText = result.message;
+        }
+    });
+
+    document.getElementById('logoutButton')?.addEventListener('click', logout);
+    
+    // На случай если enter в полях
+    const loginField = document.getElementById('loginFullName');
+    const passField = document.getElementById('loginPassword');
+    if(loginField && passField) {
+        const doAuth = () => document.getElementById('authBtn').click();
+        loginField.addEventListener('keypress', (e) => { if(e.key === 'Enter') doAuth(); });
+        passField.addEventListener('keypress', (e) => { if(e.key === 'Enter') doAuth(); });
+    }
+
+    // Модальные кнопки
+    document.getElementById('modalSubmitBtn')?.addEventListener('click', verifySphereCode);
+    document.getElementById('modalCancelBtn')?.addEventListener('click', closeCodeModal);
+    codeInput?.addEventListener('keypress', (e) => { if(e.key === 'Enter') verifySphereCode(); });
+    modal?.addEventListener('click', (e) => { if(e.target === modal) closeCodeModal(); });
+
+    // Если уже был авторизован ранее (для удобства теста - нет, но можно оставить)
+    // При загрузке проверяем, что основное приложение скрыто изначально
+    window.addEventListener('load', () => {
+        document.getElementById('mainApp').style.display = 'none';
+        document.getElementById('authModal').style.display = 'flex';
+        // Демо-заполнение для удобства (выводим в консоль пару тестовых аккаунтов)
+        const testAccounts = Array.from(usersDB.entries()).slice(0, 3);
+        console.table(testAccounts);
+        // Можно добавить подсказку в authCard
+        const hintDiv = document.createElement('div');
+        hintDiv.style.fontSize = '11px';
+        hintDiv.style.marginTop = '15px';
+        hintDiv.style.opacity = '0.7';
+        hintDiv.innerHTML = '💡 Тестовые аккаунты (первые в консоли). Пример: <span id="exampleAcc" style="color:#ffd966;"></span>';
+        const exampleAccSpan = hintDiv.querySelector('#exampleAcc');
+        if(testAccounts[0]) {
+            hintDiv.innerHTML = `💡 Пример: <strong>${testAccounts[0][0]}</strong>  | пароль: ${testAccounts[0][1]}`;
+        }
+        document.querySelector('.auth-card')?.appendChild(hintDiv);
+    });
+
+    // Обработка клика на выход (уже есть)
+    // Дополнительно, когда нажимаем на сферу - проверяем если не авторизованы (невозможно)
+</script>
+</body>
+</html>
