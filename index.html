@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>ADAPTRSMU | Авторизация + 7 инстанций</title>
+    <title>ADAPTRSMU | Система логинов и паролей (ручное управление)</title>
     <style>
         * {
             margin: 0;
@@ -19,14 +19,14 @@
             padding: 1.5rem;
         }
 
-        /* Стили для авторизации */
+        /* Стили авторизации */
         .auth-container {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.88);
             backdrop-filter: blur(12px);
             display: flex;
             justify-content: center;
@@ -37,7 +37,7 @@
 
         .auth-card {
             background: linear-gradient(135deg, #0e3a5f, #06233f);
-            padding: 2rem 2rem 2rem 2rem;
+            padding: 2rem;
             border-radius: 2.5rem;
             width: 380px;
             text-align: center;
@@ -97,6 +97,33 @@
             color: #ffaa66;
             margin-top: 12px;
             font-size: 0.85rem;
+        }
+
+        .hint-users {
+            margin-top: 18px;
+            font-size: 0.75rem;
+            background: rgba(0,0,0,0.3);
+            border-radius: 1rem;
+            padding: 10px;
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .hint-users summary {
+            cursor: pointer;
+            font-weight: bold;
+            text-align: center;
+            padding: 4px;
+            color: #ffde9c;
+        }
+
+        .hint-users p {
+            font-family: monospace;
+            font-size: 0.7rem;
+            margin: 4px 0;
+            border-bottom: 1px dashed rgba(255,255,255,0.2);
+            padding: 4px;
         }
 
         /* Основной интерфейс (скрыт до авторизации) */
@@ -318,12 +345,17 @@
 <div id="authModal" class="auth-container">
     <div class="auth-card">
         <h2>🔐 ADAPTRSMU</h2>
-        <p style="margin-bottom: 10px;">Войдите по ФИО и паролю</p>
-        <input type="text" id="loginFullName" placeholder="ФИО (например: Иванов Иван Иванович)" autocomplete="off">
+        <p style="margin-bottom: 10px;">Введите логин и пароль</p>
+        <input type="text" id="loginUsername" placeholder="Логин" autocomplete="off">
         <input type="password" id="loginPassword" placeholder="Пароль">
         <button id="authBtn">Войти</button>
         <div id="authError" class="error-msg"></div>
-        <div style="margin-top: 12px; font-size: 12px; opacity:0.7;">⭐ 100 случайных участников ⭐</div>
+        
+        <!-- Блок со списком доступных логинов (для удобства) -->
+        <details class="hint-users">
+            <summary>📋 Список логинов (нажмите)</summary>
+            <div id="loginHintList"></div>
+        </details>
     </div>
 </div>
 
@@ -367,51 +399,26 @@
 </div>
 
 <script>
-    // ---------- ГЕНЕРАЦИЯ 100 РУССКИХ ФИО и 100 ПАРОЛЕЙ ----------
-    const russianSurnames = ["Иванов","Петров","Сидоров","Смирнов","Кузнецов","Попов","Васильев","Соколов","Михайлов","Новиков","Фёдоров","Морозов","Волков","Алексеев","Лебедев","Семёнов","Егоров","Павлов","Козлов","Степанов","Николаев","Дмитриев","Андреев","Макаров","Борисов","Тимофеев","Крылов","Григорьев","Антонов","Архипов","Никитин","Максимов","Комаров","Орлов","Соловьёв","Куликов","Карпов","Фролов","Виноградов","Белов","Наумов","Голубев","Тихонов","Денисов","Ермаков","Зайцев","Кудрявцев","Поляков","Филиппов","Романов"];
-    const russianNames = ["Александр","Дмитрий","Максим","Сергей","Андрей","Алексей","Иван","Евгений","Михаил","Владимир","Николай","Павел","Артём","Роман","Илья","Олег","Василий","Виктор","Георгий","Тимофей","Артур","Даниил","Кирилл","Никита","Матвей","Егор","Фёдор","Ярослав","Глеб","Леонид"];
-    const russianPatronymics = ["Александрович","Дмитриевич","Максимович","Сергеевич","Андреевич","Алексеевич","Иванович","Евгеньевич","Михайлович","Владимирович","Николаевич","Павлович","Романович","Олегович","Васильевич","Викторович","Георгиевич","Тимофеевич","Артурович","Данилович","Кириллович"];
-
-    function getRandomItem(arr) {
-        return arr[Math.floor(Math.random() * arr.length)];
-    }
-
-    function generateRussianFIO() {
-        const surname = getRandomItem(russianSurnames);
-        const name = getRandomItem(russianNames);
-        const patronymic = getRandomItem(russianPatronymics);
-        return `${surname} ${name} ${patronymic}`;
-    }
-
-    function generateRandomPassword() {
-        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789!@#$%";
-        let pass = "";
-        for (let i = 0; i < 8; i++) {
-            pass += chars[Math.floor(Math.random() * chars.length)];
-        }
-        return pass;
-    }
-
-    // Создаём базу 100 уникальных пользователей (ФИО -> пароль)
-    const usersDB = new Map(); // key: ФИО (строка), value: пароль
-    const usedLogins = new Set();
-    while (usersDB.size < 100) {
-        const fio = generateRussianFIO();
-        if (!usedLogins.has(fio)) {
-            usedLogins.add(fio);
-            const pass = generateRandomPassword();
-            usersDB.set(fio, pass);
-        }
-    }
-
-    // Для отладки (выведем в консоль несколько примеров)
-    console.log("Сгенерировано 100 пользователей. Примеры:");
-    let sampleCount = 0;
-    for (let [login, pass] of usersDB.entries()) {
-        if (sampleCount++ < 5) console.log(`${login} | пароль: ${pass}`);
-    }
-
-    // ---------- 7 ИНСТАНЦИЙ: каждая имеет 1 сферу ----------
+    // --------------------------------------------------------------
+    // ********** РЕДАКТИРУЙТЕ ЭТОТ МАССИВ: ваши логины и пароли **********
+    // --------------------------------------------------------------
+    const usersDB = new Map();  // ключ: логин, значение: пароль
+    
+    // ДОБАВЛЯЙТЕ СВОИ ПАРЫ (логин, пароль) НИЖЕ:
+    usersDB.set("Костюхина Софья Юрьевна", "140070");
+    usersDB.set("student1", "pass123");
+    usersDB.set("teacher", "teach2025");
+    usersDB.set("adapt_user", "adapt2026");
+    usersDB.set("ivanov", "qwerty");
+    usersDB.set("petrova", "petrova99");
+    usersDB.set("leader", "lead777");
+    // ★★★ ВЫ МОЖЕТЕ ДОБАВИТЬ ЛЮБОЕ КОЛИЧЕСТВО ★★★
+    // Пример: usersDB.set("мойЛогин", "мойПароль");
+    
+    // (При необходимости удалить или добавить строки выше)
+    // --------------------------------------------------------------
+    
+    // ---- 7 ИНСТАНЦИЙ: каждая имеет 1 сферу с определенным кодом ----
     const INSTANCES = [
         { name: "Донорское движение", sphereCode: "DONOR2025" },
         { name: "Тьюторское движение", sphereCode: "TUTOR777" },
@@ -421,11 +428,11 @@
         { name: "Волонтерский центр", sphereCode: "VOLONTER" },
         { name: "Медиа-штаб", sphereCode: "MEDIA2025" }
     ];
-
-    // Состояние прохождения для текущего пользователя (храним в localStorage, но сессия пока простая - глобальный объект)
-    let currentUser = null;              // логин (ФИО)
+    
+    // ----- Состояние текущего пользователя -----
+    let currentUser = null;              // логин
     let userProgress = {};               // { "Донорское движение": false, ... }
-
+    
     function initUserProgress() {
         let progress = {};
         INSTANCES.forEach(inst => {
@@ -433,14 +440,14 @@
         });
         return progress;
     }
-
-    // сохраняем прогресс в localStorage относительно пользователя
+    
+    // Сохраняем прогресс в localStorage относительно логина
     function saveProgressToLocal() {
         if (!currentUser) return;
         const storageKey = `adaptrsmu_progress_${currentUser}`;
         localStorage.setItem(storageKey, JSON.stringify(userProgress));
     }
-
+    
     function loadProgressFromLocal() {
         if (!currentUser) return;
         const storageKey = `adaptrsmu_progress_${currentUser}`;
@@ -448,7 +455,7 @@
         if (saved) {
             try {
                 const parsed = JSON.parse(saved);
-                // проверим что все поля есть
+                // проверяем что все поля существуют
                 INSTANCES.forEach(inst => {
                     if (parsed[inst.name] === undefined) parsed[inst.name] = false;
                 });
@@ -457,24 +464,22 @@
         } else {
             userProgress = initUserProgress();
         }
-        // синхронизируем отображение
     }
-
-    // Функция проверки полного прохождения всех сфер
+    
+    // Проверка полного прохождения
     function isAllCompleted() {
         for (let inst of INSTANCES) {
             if (!userProgress[inst.name]) return false;
         }
         return true;
     }
-
+    
     // Обновить интерфейс наград
     function updateRewardUI() {
         const rewardDiv = document.getElementById('rewardArea');
         if (isAllCompleted()) {
             rewardDiv.classList.remove('hidden');
             const merchSpan = document.getElementById('merchCodeDisplay');
-            // Генерируем уникальный код мерча на основе пользователя
             if (currentUser) {
                 const userHash = btoa(currentUser.slice(0, 15)).replace(/[^a-zA-Z0-9]/g, '').substring(0, 6);
                 merchSpan.innerText = `MERCH-${userHash.toUpperCase()}-ADPT`;
@@ -485,8 +490,8 @@
             rewardDiv.classList.add('hidden');
         }
     }
-
-    // Отображение всех инстанций и сфер (с учётом прогресса)
+    
+    // Отрисовка всех инстанций
     function renderInstances() {
         const container = document.getElementById('instancesContainer');
         if (!container) return;
@@ -514,7 +519,6 @@
             sphereDiv.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (userProgress[instance.name]) {
-                    // уже пройдена: легкий фидбек
                     sphereDiv.style.transform = 'scale(0.98)';
                     setTimeout(() => sphereDiv.style.transform = '', 150);
                     return;
@@ -526,17 +530,17 @@
             container.appendChild(card);
         });
     }
-
-    // Модальное окно ввода кода для конкретной инстанции
+    
+    // Модальное окно ввода кода для сферы
     let currentModalInstanceName = null;
     let currentModalSphereElement = null;
     let currentValidCode = null;
-
+    
     const modal = document.getElementById('codeModal');
     const codeInput = document.getElementById('sphereCodeInput');
     const modalInstanceTitle = document.getElementById('modalInstanceTitle');
     const modalErrorMsg = document.getElementById('modalErrorMsg');
-
+    
     function openCodeModal(instanceName, correctCode, sphereElement) {
         if (userProgress[instanceName]) return;
         currentModalInstanceName = instanceName;
@@ -548,54 +552,48 @@
         modal.style.display = 'flex';
         codeInput.focus();
     }
-
+    
     function closeCodeModal() {
         modal.style.display = 'none';
         currentModalInstanceName = null;
         currentModalSphereElement = null;
         currentValidCode = null;
     }
-
+    
     function verifySphereCode() {
         if (!currentModalInstanceName) return;
         const entered = codeInput.value.trim();
         if (entered === currentValidCode) {
-            // Код верен!
             if (!userProgress[currentModalInstanceName]) {
-                // Отмечаем сферу пройденной
                 userProgress[currentModalInstanceName] = true;
-                // Обновляем внешний вид сферы
                 if (currentModalSphereElement) {
                     currentModalSphereElement.classList.add('completed');
                     currentModalSphereElement.innerHTML = '✓<span>пройдено</span>';
                 }
-                // Сохраняем прогресс
                 saveProgressToLocal();
-                // Проверка на полное завершение
                 updateRewardUI();
-                // Дополнительно: если все пройдены, показать блок сертификата с анимацией
                 if (isAllCompleted()) {
                     const rewardBlock = document.getElementById('rewardArea');
                     if (rewardBlock) rewardBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
                 closeCodeModal();
             } else {
-                modalErrorMsg.innerText = 'Эта сфера уже активирована ранее!';
+                modalErrorMsg.innerText = 'Эта сфера уже активирована!';
                 setTimeout(() => closeCodeModal(), 800);
             }
         } else {
-            modalErrorMsg.innerText = `Неверный код! Для ${currentModalInstanceName} код отличается. Подсказка: попробуйте тематический (например, DONOR2025, TUTOR777)`;
+            modalErrorMsg.innerText = `Неверный код! Для "${currentModalInstanceName}" код: ${currentValidCode}`;
             codeInput.value = '';
             codeInput.style.border = '1px solid #ffaa66';
             setTimeout(() => codeInput.style.border = '', 400);
         }
     }
-
-    // ---------- СИСТЕМА АВТОРИЗАЦИИ ----------
+    
+    // ---------- СИСТЕМА АВТОРИЗАЦИИ (прямая проверка из usersDB) ----------
     function authUser(login, password) {
         const trimmedLogin = login.trim();
         if (!usersDB.has(trimmedLogin)) {
-            return { success: false, message: "ФИО не найдено в базе участников." };
+            return { success: false, message: "Логин не найден в базе." };
         }
         const realPass = usersDB.get(trimmedLogin);
         if (realPass !== password) {
@@ -603,84 +601,88 @@
         }
         return { success: true, message: "Успешно!" };
     }
-
-    function onLoginSuccess(fio) {
-        currentUser = fio;
-        // загружаем прогресс этого пользователя
-        loadProgressFromLocal();
-        // обновляем интерфейс
+    
+    function onLoginSuccess(login) {
+        currentUser = login;
+        loadProgressFromLocal();      // загружаем прогресс конкретного пользователя
         document.getElementById('userNameDisplay').innerHTML = `👤 ${currentUser}`;
         renderInstances();
         updateRewardUI();
-        // скрыть модалку авторизации, показать основное приложение
         document.getElementById('authModal').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
     }
-
+    
     function logout() {
         currentUser = null;
         userProgress = {};
         document.getElementById('mainApp').style.display = 'none';
         document.getElementById('authModal').style.display = 'flex';
-        document.getElementById('loginFullName').value = '';
+        document.getElementById('loginUsername').value = '';
         document.getElementById('loginPassword').value = '';
         document.getElementById('authError').innerText = '';
-        // очистить модалку если открыта
         closeCodeModal();
     }
-
-    // Обработчики авторизации
+    
+    // Отрисовка подсказки со списком логинов (из usersDB)
+    function renderLoginHint() {
+        const hintContainer = document.getElementById('loginHintList');
+        if (!hintContainer) return;
+        hintContainer.innerHTML = '';
+        const logins = Array.from(usersDB.keys());
+        if (logins.length === 0) {
+            hintContainer.innerHTML = '<p style="color: #ffaa88;">❌ Нет добавленных логинов. Добавьте их в коде (массив usersDB).</p>';
+            return;
+        }
+        logins.forEach(login => {
+            const p = document.createElement('p');
+            p.textContent = `🔑 ${login}`;
+            hintContainer.appendChild(p);
+        });
+    }
+    
+    // Обработчики событий
     document.getElementById('authBtn').addEventListener('click', () => {
-        const fio = document.getElementById('loginFullName').value;
+        const login = document.getElementById('loginUsername').value;
         const pass = document.getElementById('loginPassword').value;
-        const result = authUser(fio, pass);
+        const result = authUser(login, pass);
         if (result.success) {
-            onLoginSuccess(fio);
+            onLoginSuccess(login);
         } else {
             document.getElementById('authError').innerText = result.message;
         }
     });
-
+    
     document.getElementById('logoutButton')?.addEventListener('click', logout);
     
-    // На случай если enter в полях
-    const loginField = document.getElementById('loginFullName');
+    // Нажатие Enter в полях авторизации
+    const loginField = document.getElementById('loginUsername');
     const passField = document.getElementById('loginPassword');
-    if(loginField && passField) {
+    if (loginField && passField) {
         const doAuth = () => document.getElementById('authBtn').click();
         loginField.addEventListener('keypress', (e) => { if(e.key === 'Enter') doAuth(); });
         passField.addEventListener('keypress', (e) => { if(e.key === 'Enter') doAuth(); });
     }
-
+    
     // Модальные кнопки
     document.getElementById('modalSubmitBtn')?.addEventListener('click', verifySphereCode);
     document.getElementById('modalCancelBtn')?.addEventListener('click', closeCodeModal);
     codeInput?.addEventListener('keypress', (e) => { if(e.key === 'Enter') verifySphereCode(); });
     modal?.addEventListener('click', (e) => { if(e.target === modal) closeCodeModal(); });
-
-    // Если уже был авторизован ранее (для удобства теста - нет, но можно оставить)
-    // При загрузке проверяем, что основное приложение скрыто изначально
+    
+    // Инициализация при загрузке
     window.addEventListener('load', () => {
         document.getElementById('mainApp').style.display = 'none';
         document.getElementById('authModal').style.display = 'flex';
-        // Демо-заполнение для удобства (выводим в консоль пару тестовых аккаунтов)
-        const testAccounts = Array.from(usersDB.entries()).slice(0, 3);
-        console.table(testAccounts);
-        // Можно добавить подсказку в authCard
-        const hintDiv = document.createElement('div');
-        hintDiv.style.fontSize = '11px';
-        hintDiv.style.marginTop = '15px';
-        hintDiv.style.opacity = '0.7';
-        hintDiv.innerHTML = '💡 Тестовые аккаунты (первые в консоли). Пример: <span id="exampleAcc" style="color:#ffd966;"></span>';
-        const exampleAccSpan = hintDiv.querySelector('#exampleAcc');
-        if(testAccounts[0]) {
-            hintDiv.innerHTML = `💡 Пример: <strong>${testAccounts[0][0]}</strong>  | пароль: ${testAccounts[0][1]}`;
+        renderLoginHint();  // показываем список доступных логинов
+        // Проверка, что есть хоть один пользователь, иначе предупреждение в консоли
+        if (usersDB.size === 0) {
+            console.warn("ВНИМАНИЕ: База usersDB пуста! Добавьте логины и пароли в коде (строка с usersDB.set(...))");
+            document.getElementById('authError').innerText = "⚠️ База пользователей пуста! Добавьте логины в коде.";
+        } else {
+            // Дополнительно можно вывести в консоль для разработчика
+            console.log("Доступные логины:", Array.from(usersDB.keys()));
         }
-        document.querySelector('.auth-card')?.appendChild(hintDiv);
     });
-
-    // Обработка клика на выход (уже есть)
-    // Дополнительно, когда нажимаем на сферу - проверяем если не авторизованы (невозможно)
 </script>
 </body>
 </html>
